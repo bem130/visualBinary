@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>バイナリデータ画像ビューア</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        :root {
+            --bg-color: #0F172A; /* Slate 900 */
+            --container-bg: #1E293B; /* Slate 800 */
+            --border-color: #334155; /* Slate 700 */
+            --text-primary: #F1F5F9; /* Slate 100 */
+            --text-secondary: #94A3B8; /* Slate 400 */
+            --accent-start: #3B82F6; /* Blue 500 */
+            --accent-end: #8B5CF6; /* Violet 500 */
+            --accent-hover: #2563EB; /* Blue 600 */
+            --success-color: #22C55E; /* Green 500 */
+            --code-bg: #0F172A; /* Slate 900 */
+            color-scheme: dark;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            background-color: var(--container-bg);
+            padding: 2.5rem;
+            border-radius: 1.5rem; /* Increased border-radius */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem; /* Using gap for spacing */
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0;
+            background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            resize: vertical;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            box-sizing: border-box; /* Ensures padding is included in width */
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-start);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            flex-wrap: wrap;
+            gap: 1rem; /* Space between items */
+        }
+
+        .input-group > div { /* Wrapper for label and input */
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .input-group input {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            width: 70px;
+            text-align: center;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--accent-start);
+        }
+
+        #canvas-container {
+            background-color: var(--bg-color);
+            border: 2px solid var(--border-color);
+            border-radius: 0.75rem;
+            overflow-x: auto;
+            max-width: 100%;
+            padding: 0.5rem;
+        }
+
+        canvas {
+            image-rendering: pixelated;
+            width: 100%;
+            height: auto;
+            background-color: #000;
+            display: block; /* Removes bottom space */
+        }
+
+        .button-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .button-group button {
+            background-image: linear-gradient(90deg, var(--accent-start) 0%, var(--accent-end) 100%);
+            color: #fff;
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .button-group button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .viewer-container {
+            background-color: var(--code-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            width: 100%;
+            text-align: left;
+            box-sizing: border-box;
+        }
+
+        .viewer-container h3 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+        }
+
+        pre {
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+            padding: 0;
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>バイナリデータ画像ビューア</h1>
+        <p>
+            テキストを入力すると、そのUTF-8バイナリデータが画像としてリアルタイムに表示されます。
+            各列は1バイト（8ビット）を表し、1ピクセル目（一番上）がタイミング用、続く8ピクセルがデータ、10ピクセル目（一番下）がスペース用です。
+        </p>
+        <textarea id="textInput" placeholder="ここにテキストを入力してください..."></textarea>
+
+        <div class="input-group">
+            <div>
+                <label for="maxWidthInput">最大横幅 (px):</label>
+                <input type="number" id="maxWidthInput" value="128" min="1">
+            </div>
+            <div>
+                <label for="pixelWidthInput">ピクセル幅 (px):</label>
+                <input type="number" id="pixelWidthInput" value="10" min="1">
+            </div>
+            <div>
+                <label for="pixelHeightInput">ピクセル高さ (px):</label>
+                <input type="number" id="pixelHeightInput" value="10" min="1">
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button id="monochromeBtn">白黒表示</button>
+            <button id="colorBtn">色分け表示</button>
+            <button id="copyImageBtn">画像をコピー</button>
+            <button id="openImageBtn">画像を別タブで開く</button>
+        </div>
+        <div id="canvas-container">
+            <canvas id="binaryCanvas"></canvas>
+        </div>
+        <div class="viewer-container">
+            <h3>バイナリデータ (16進数)</h3>
+            <pre id="hexViewer"></pre>
+        </div>
+        <div class="viewer-container">
+            <h3>バイナリデータ (2進数)</h3>
+            <pre id="binaryViewer"></pre>
+        </div>
+    </div>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const canvas = document.getElementById('binaryCanvas');
+        const ctx = canvas.getContext('2d');
+        const encoder = new TextEncoder();
+        const monochromeBtn = document.getElementById('monochromeBtn');
+        const colorBtn = document.getElementById('colorBtn');
+        const copyImageBtn = document.getElementById('copyImageBtn');
+        const openImageBtn = document.getElementById('openImageBtn');
+        const hexViewer = document.getElementById('hexViewer');
+        const binaryViewer = document.getElementById('binaryViewer');
+        const maxWidthInput = document.getElementById('maxWidthInput');
+        const pixelWidthInput = document.getElementById('pixelWidthInput');
+        const pixelHeightInput = document.getElementById('pixelHeightInput');
+
+        let displayMode = 'monochrome'; // 'monochrome' or 'color'
+
+        // Function to draw the binary image
+        function drawBinaryImage(text) {
+            const utf8Bytes = encoder.encode(text);
+            const numBytes = utf8Bytes.length;
+            const maxWidth = parseInt(maxWidthInput.value, 10) || 128; // Get max width from input with fallback
+            const pixelWidth = parseInt(pixelWidthInput.value, 10) || 1;
+            const pixelHeight = parseInt(pixelHeightInput.value, 10) || 1;
+            const pixelHeightPerByte = 10;
+
+            // Calculate canvas dimensions based on line wrapping
+            const numRows = Math.ceil(numBytes / maxWidth);
+            const canvasWidth = maxWidth * pixelWidth;
+            const canvasHeight = numRows * pixelHeightPerByte * pixelHeight;
+
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight > 0 ? canvasHeight : pixelHeightPerByte * pixelHeight;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Set canvas background color based on display mode
+            if (displayMode === 'monochrome') {
+                ctx.fillStyle = '#000';
+            } else { // color mode
+                ctx.fillStyle = 'hsl(220, 15%, 10%)';
+            }
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Iterate over each byte and draw the 10-pixel column
+            for (let i = 0; i < numBytes; i++) {
+                const byte = utf8Bytes[i];
+
+                // Calculate position for line wrapping
+                const xOffset = (i % maxWidth) * pixelWidth;
+                const yOffset = Math.floor(i / maxWidth) * pixelHeightPerByte * pixelHeight;
+
+                // Draw the timing pattern pixel (first pixel)
+                if (displayMode === 'monochrome') {
+                    ctx.fillStyle = (Math.floor(i / 2) % 2 === 0) ? '#fff' : '#000';
+                } else { // color mode
+                    ctx.fillStyle = (Math.floor(i / 2) % 2 === 0) ? 'hsl(40, 50%, 80%)' : 'hsl(40, 50%, 20%)';
+                }
+                ctx.fillRect(xOffset, yOffset, pixelWidth, pixelHeight);
+
+                // Draw the 8 data bits (pixels 2-9)
+                for (let j = 0; j < 8; j++) {
+                    const bit = (byte >> (7 - j)) & 1;
+                    const y = yOffset + (j + 1) * pixelHeight; // Row index, shifted by 1 for the timing pixel
+
+                    if (displayMode === 'monochrome') {
+                        ctx.fillStyle = bit === 1 ? '#fff' : '#000';
+                    } else { // color mode
+                        if (bit === 1) {
+                            // Upper 4 bits (j < 4) or Lower 4 bits (j >= 4)
+                            if (j < 4) {
+                                ctx.fillStyle = 'hsl(220, 100%, 70%)'; // Light blue for upper bits
+                            } else {
+                                ctx.fillStyle = 'hsl(280, 100%, 70%)'; // Light purple for lower bits
+                            }
+                        } else { // bit === 0
+                            // Upper 4 bits (j < 4) or Lower 4 bits (j >= 4)
+                            if (j < 4) {
+                                ctx.fillStyle = 'hsl(220, 100%, 20%)';
+                            } else {
+                                ctx.fillStyle = 'hsl(280, 100%, 20%)';
+                            }
+                        }
+                    }
+                    ctx.fillRect(xOffset, y, pixelWidth, pixelHeight);
+                }
+
+                // Draw the space pixel (last pixel)
+                if (displayMode === 'monochrome') {
+                    ctx.fillStyle = '#000';
+                } else { // color mode
+                    ctx.fillStyle = 'hsl(120, 10%, 20%)'; // Green for space
+                }
+                ctx.fillRect(xOffset, yOffset + 9 * pixelHeight, pixelWidth, pixelHeight);
+            }
+        }
+
+        // Function to display binary data in hexadecimal and binary formats
+        function displayData(text) {
+            const utf8Bytes = encoder.encode(text);
+            const hexString = Array.from(utf8Bytes)
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join(' ');
+            const binaryString = Array.from(utf8Bytes)
+                .map(b => b.toString(2).padStart(8, '0'))
+                .join(' ');
+
+            hexViewer.textContent = hexString;
+            binaryViewer.textContent = binaryString;
+        }
+
+        function update() {
+            drawBinaryImage(textInput.value);
+            displayData(textInput.value);
+        }
+
+        // Add event listeners for input and button clicks
+        textInput.addEventListener('input', () => {
+            drawBinaryImage(textInput.value);
+            displayData(textInput.value);
+        });
+
+        monochromeBtn.addEventListener('click', () => {
+            displayMode = 'monochrome';
+            drawBinaryImage(textInput.value);
+        });
+
+        colorBtn.addEventListener('click', () => {
+            displayMode = 'color';
+            drawBinaryImage(textInput.value);
+        });
+
+        maxWidthInput.addEventListener('input', () => {
+            drawBinaryImage(textInput.value);
+        });
+
+        pixelWidthInput.addEventListener('input', () => {
+            drawBinaryImage(textInput.value);
+        });
+
+        pixelHeightInput.addEventListener('input', () => {
+            drawBinaryImage(textInput.value);
+        });
+
+        copyImageBtn.addEventListener('click', () => {
+            canvas.toBlob(blob => {
+                if (blob) {
+                    navigator.clipboard.write([
+                        new ClipboardItem({
+                            'image/png': blob
+                        })
+                    ]).then(() => {
+                        const originalText = copyImageBtn.textContent;
+                        copyImageBtn.textContent = 'コピーしました！';
+                        setTimeout(() => {
+                            copyImageBtn.textContent = originalText;
+                        }, 2000);
+                    }).catch(err => {
+                        console.error('画像のコピーに失敗しました:', err);
+                        alert('画像のコピーに失敗しました。');
+                    });
+                }
+            }, 'image/png');
+        });
+
+        openImageBtn.addEventListener('click', () => {
+            const dataUrl = canvas.toDataURL('image/png');
+            const newTab = window.open();
+            // To maintain the dark background when viewing the image directly
+            newTab.document.write(`
+                <style>
+                    :root {
+                        color-scheme: dark;
+                    }
+                </style>
+                <img src="${dataUrl}">
+            `);
+        });
+
+        // Initial draw
+        drawBinaryImage('');
+        displayData('');
+        update();
+    </script>
+</body>
+</html>
