@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文字バイナリ学習フラッシュカード</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;700&display=swap');
+
+        :root {
+            --bg-color: #0F172A; /* Slate 900 */
+            --container-bg: #1E293B; /* Slate 800 */
+            --border-color: #334155; /* Slate 700 */
+            --text-primary: #F1F5F9; /* Slate 100 */
+            --text-secondary: #94A3B8; /* Slate 400 */
+            --accent-start: #3B82F6; /* Blue 500 */
+            --accent-end: #8B5CF6; /* Violet 500 */
+            --accent-hover: #2563EB; /* Blue 600 */
+            --success-color: #22C55E; /* Green 500 */
+            --code-bg: #0F172A; /* Slate 900 */
+            color-scheme: dark;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            background-color: var(--container-bg);
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem; /* Adjusted gap */
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0;
+            background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: 1.6;
+        }
+        
+        .instructions {
+            background-color: var(--bg-color);
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .selectors-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .selector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .selector label {
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .selector select {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        
+        .selector select:focus {
+            outline: none;
+            border-color: var(--accent-start);
+        }
+
+        .selector .button-toggles {
+            display: flex;
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+
+        .selector button {
+            background: transparent;
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: background-color 0.2s, color 0.2s;
+            border-left: 1px solid var(--border-color);
+        }
+        
+        .selector button:first-child {
+            border-left: none;
+        }
+
+        .selector button.active {
+            background-color: var(--accent-start);
+            color: #fff;
+        }
+
+        .flashcard-container {
+            background-color: var(--code-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            width: 100%;
+            box-sizing: border-box;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+        }
+
+        #canvas-container {
+            background-color: var(--bg-color);
+            border: 2px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 0.5rem;
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        canvas {
+            image-rendering: pixelated;
+            display: block;
+        }
+
+        #answer-container {
+            font-size: 8rem;
+            font-weight: 700;
+            color: var(--success-color);
+            min-height: 130px;
+            visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #answer-container.visible {
+            visibility: visible;
+        }
+        
+        #answer-text {
+            line-height: 1;
+        }
+
+        .button-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .button-group button {
+            background-image: linear-gradient(90deg, var(--accent-start) 0%, var(--accent-end) 100%);
+            color: #fff;
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            min-width: 150px;
+        }
+
+        .button-group button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>文字バイナリ学習フラッシュカード</h1>
+        <p>
+            文字のUTF-8バイナリデータを画像で見て、元の文字を当てるゲームです。
+        </p>
+        <div class="instructions">
+            <strong>スペースキー</strong>で「答えを見る」→「次の問題」の操作ができます。
+        </div>
+
+        <div class="selectors-group">
+            <div class="selector">
+                <label for="charSetSelect">学習モード:</label>
+                <select id="charSetSelect">
+                    <option value="ascii">ASCII (英数字記号)</option>
+                    <option value="hiragana">ひらがな</option>
+                    <option value="katakana">カタカナ</option>
+                </select>
+            </div>
+            <div class="selector">
+                <label>表示モード:</label>
+                <div class="button-toggles">
+                    <button id="monochromeBtn" class="active">白黒</button>
+                    <button id="colorBtn">カラー</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flashcard-container">
+            <div id="canvas-container">
+                <canvas id="binaryCanvas"></canvas>
+            </div>
+            <div id="answer-container">
+                <span id="answer-text"></span>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button id="showAnswerBtn">答えを見る</button>
+            <button id="nextQuestionBtn">次の問題</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('binaryCanvas');
+        const ctx = canvas.getContext('2d');
+        const encoder = new TextEncoder();
+        
+        const charSetSelect = document.getElementById('charSetSelect');
+        const showAnswerBtn = document.getElementById('showAnswerBtn');
+        const nextQuestionBtn = document.getElementById('nextQuestionBtn');
+        const answerContainer = document.getElementById('answer-container');
+        const answerText = document.getElementById('answer-text');
+        
+        // --- NEW: Display Mode Elements ---
+        const monochromeBtn = document.getElementById('monochromeBtn');
+        const colorBtn = document.getElementById('colorBtn');
+        
+        const CHAR_SETS = {
+            ascii: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:",.<>/?`~'.split(''),
+            hiragana: 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽぁぃぅぇぉゃゅょっ'.split(''),
+            katakana: 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポァィゥェォャュョッ'.split('')
+        };
+
+        let currentQuestionChar = '';
+        let currentMode = 'ascii';
+        let displayMode = 'monochrome'; // 'monochrome' or 'color'
+
+        // --- MODIFIED: Function to draw the binary image with color options ---
+        function drawBinaryImage(char) {
+            const utf8Bytes = encoder.encode(char);
+            const numBytes = utf8Bytes.length;
+            
+            const pixelWidth = 20;
+            const pixelHeight = 20;
+            const pixelHeightPerByte = 10;
+
+            const canvasWidth = numBytes * pixelWidth;
+            const canvasHeight = pixelHeightPerByte * pixelHeight;
+
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Set canvas background color based on display mode
+            if (displayMode === 'monochrome') {
+                ctx.fillStyle = '#000';
+            } else { // color mode
+                ctx.fillStyle = 'hsl(220, 15%, 10%)';
+            }
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Iterate over each byte and draw the 10-pixel column
+            for (let i = 0; i < numBytes; i++) {
+                const byte = utf8Bytes[i];
+                const xOffset = i * pixelWidth;
+
+                // 1. Draw the timing pattern pixel
+                if (displayMode === 'monochrome') {
+                    ctx.fillStyle = (Math.floor(i / 2) % 2 === 0) ? '#fff' : '#000';
+                } else { // color mode
+                    ctx.fillStyle = (Math.floor(i / 2) % 2 === 0) ? 'hsl(40, 50%, 80%)' : 'hsl(40, 50%, 20%)';
+                }
+                ctx.fillRect(xOffset, 0, pixelWidth, pixelHeight);
+
+                // 2. Draw the 8 data bits
+                for (let j = 0; j < 8; j++) {
+                    const bit = (byte >> (7 - j)) & 1;
+                    const y = (j + 1) * pixelHeight;
+
+                    if (displayMode === 'monochrome') {
+                        ctx.fillStyle = bit === 1 ? '#fff' : '#000';
+                    } else { // color mode
+                        if (bit === 1) {
+                            // Upper 4 bits (j < 4) or Lower 4 bits (j >= 4)
+                            ctx.fillStyle = j < 4 ? 'hsl(220, 100%, 70%)' : 'hsl(280, 100%, 70%)';
+                        } else { // bit === 0
+                            ctx.fillStyle = j < 4 ? 'hsl(220, 100%, 20%)' : 'hsl(280, 100%, 20%)';
+                        }
+                    }
+                    ctx.fillRect(xOffset, y, pixelWidth, pixelHeight);
+                }
+
+                // 3. Draw the space pixel
+                if (displayMode === 'monochrome') {
+                    ctx.fillStyle = '#000';
+                } else { // color mode
+                    ctx.fillStyle = 'hsl(120, 10%, 20%)';
+                }
+                ctx.fillRect(xOffset, 9 * pixelHeight, pixelWidth, pixelHeight);
+            }
+        }
+        
+        function generateQuestion() {
+            answerContainer.classList.remove('visible');
+            const charSet = CHAR_SETS[currentMode];
+            const randomIndex = Math.floor(Math.random() * charSet.length);
+            currentQuestionChar = charSet[randomIndex];
+            answerText.textContent = currentQuestionChar;
+            drawBinaryImage(currentQuestionChar);
+        }
+
+        function showAnswer() {
+            answerContainer.classList.add('visible');
+        }
+
+        // --- Event Listeners ---
+        charSetSelect.addEventListener('change', (event) => {
+            currentMode = event.target.value;
+            generateQuestion();
+        });
+
+        showAnswerBtn.addEventListener('click', showAnswer);
+        nextQuestionBtn.addEventListener('click', generateQuestion);
+
+        window.addEventListener('keydown', (event) => {
+            if (event.code === 'Space' || event.key === ' ') {
+                event.preventDefault();
+                if (answerContainer.classList.contains('visible')) {
+                    generateQuestion();
+                } else {
+                    showAnswer();
+                }
+            }
+        });
+        
+        // --- NEW: Display Mode Button Listeners ---
+        monochromeBtn.addEventListener('click', () => {
+            displayMode = 'monochrome';
+            monochromeBtn.classList.add('active');
+            colorBtn.classList.remove('active');
+            drawBinaryImage(currentQuestionChar); // Re-draw with new mode
+        });
+
+        colorBtn.addEventListener('click', () => {
+            displayMode = 'color';
+            colorBtn.classList.add('active');
+            monochromeBtn.classList.remove('active');
+            drawBinaryImage(currentQuestionChar); // Re-draw with new mode
+        });
+
+        // --- Initial Setup ---
+        generateQuestion();
+
+    </script>
+</body>
+</html>
