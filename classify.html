@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCIIビットパターン判定クイズ</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;700&family=JetBrains+Mono:wght@700&display=swap');
+
+        :root {
+            --bg-color: #0F172A; /* Slate 900 */
+            --container-bg: #1E293B; /* Slate 800 */
+            --border-color: #334155; /* Slate 700 */
+            --text-primary: #F1F5F9; /* Slate 100 */
+            --text-secondary: #94A3B8; /* Slate 400 */
+            --accent-start: #3B82F6; /* Blue 500 */
+            --accent-end: #8B5CF6; /* Violet 500 */
+            --accent-hover: #2563EB; /* Blue 600 */
+            --success-color: #22C55E; /* Green 500 */
+            --error-color: #EF4444; /* Red 500 */
+            --code-bg: #0F172A; /* Slate 900 */
+            color-scheme: dark;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            background-color: var(--container-bg);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 600px; /* 横幅を調整 */
+            text-align: center;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        h1 {
+            font-size: 2rem; font-weight: 700; margin: 0;
+            background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        p { font-size: 1rem; color: var(--text-secondary); margin: 0; line-height: 1.6; }
+        
+        .instructions {
+            background-color: var(--bg-color); padding: 0.75rem 1rem; border-radius: 0.75rem;
+            border: 1px solid var(--border-color); color: var(--text-secondary); font-size: 0.9rem;
+        }
+
+        .settings-group {
+            display: flex; justify-content: center; align-items: center; gap: 1.5rem;
+            background-color: var(--bg-color); padding: 1rem; border-radius: 1rem;
+            border: 1px solid var(--border-color);
+        }
+        .selector { display: flex; align-items: center; justify-content: center; gap: 1rem; }
+        .selector label { font-size: 1rem; color: var(--text-secondary); }
+        .selector select {
+            background-color: var(--container-bg); color: var(--text-primary);
+            border: 2px solid var(--border-color); border-radius: 0.75rem;
+            padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer;
+        }
+        .selector select:focus { outline: none; border-color: var(--accent-start); }
+
+        .quiz-area {
+            background-color: var(--bg-color); border: 2px solid var(--border-color);
+            border-radius: 0.75rem; padding: 1.5rem; width: 100%; box-sizing: border-box;
+            min-height: 250px; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; gap: 1.5rem; position: relative;
+        }
+        
+        .binary-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 4ビットずつ2列に */
+            gap: 1.5rem; /* 左右の隙間 */
+            justify-items: center;
+        }
+        .binary-nibble {
+            display: flex;
+            flex-direction: column; /* 縦に並べる */
+            gap: 0.5rem;
+        }
+
+        .binary-digit {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.75rem;
+            width: 100px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            font-weight: 700;
+            transition: transform 0.2s ease;
+        }
+        .digit-0 { background-color: var(--bg-color); color: var(--text-primary); border: 2px solid var(--border-color); }
+        .digit-1 { background-color: var(--text-primary); color: var(--bg-color); }
+        
+        .feedback-container {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.3s ease; pointer-events: none;
+            display: flex; flex-direction: column; align-items: center; line-height: 1;
+        }
+        .feedback-container.visible { opacity: 1; }
+        .feedback-container.correct { color: var(--success-color); }
+        .feedback-container.incorrect { color: var(--error-color); }
+        
+        .feedback-icon { font-size: 5rem; font-weight: 700; }
+        
+        /* ★★★ 変更点: text-shadowを追加 ★★★ */
+        .feedback-char {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 8.5rem; font-weight: 700; margin-top: 0.5rem;
+            color: var(--text-secondary); /* 文字は常に白色で表示 */
+            text-shadow: 0 0 12px rgba(0,0,0,0.8), 2px 2px 8px rgba(0,0,0,0.7); /* より暗くぼやけた影を追加 */
+        }
+        /* ★★★ 変更ここまで ★★★ */
+
+        .choice-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .choice-button {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background-color: var(--container-bg);
+            color: var(--text-primary); padding: 1rem; border: 2px solid var(--border-color);
+            border-radius: 0.75rem; cursor: pointer; font-size: 1.25rem; font-weight: 700;
+            transition: all 0.2s ease;
+        }
+        .choice-button:not(:disabled):hover { border-color: var(--accent-start); transform: translateY(-3px); }
+        .choice-button:disabled { cursor: not-allowed; opacity: 0.7; }
+        .choice-button.correct { background-color: var(--success-color); border-color: var(--success-color); color: #fff; }
+        .choice-button.incorrect { background-color: var(--error-color); border-color: var(--error-color); color: #fff; }
+
+        .button-group { display: flex; align-items: center; justify-content: center; gap: 1rem; }
+        .button-group button {
+            background-image: linear-gradient(90deg, var(--accent-start) 0%, var(--accent-end) 100%);
+            color: #fff; padding: 0.75rem 2rem; border: none; border-radius: 0.75rem;
+            cursor: pointer; font-size: 1rem; font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); min-width: 180px;
+        }
+        .button-group button:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); }
+        
+        #game-screen, #result-screen {
+            display: flex; flex-direction: column; gap: 1.5rem; width: 100%; align-items: center;
+        }
+        #result-screen { display: none; }
+        .result-metrics { display: flex; gap: 2rem; font-size: 1.5rem; }
+        .metric { display: flex; flex-direction: column; }
+        .metric-value { font-size: 2.5rem; font-weight: 700; }
+        .metric-label { font-size: 1rem; color: var(--text-secondary); }
+        #result-text-area {
+            width: 100%; max-width: 500px; background-color: var(--code-bg);
+            border: 2px solid var(--border-color); color: var(--text-primary);
+            border-radius: 0.75rem; padding: 1rem; font-family: 'JetBrains Mono', monospace;
+            resize: none; text-align: center;
+        }
+        #copy-feedback { font-size: 0.9rem; color: var(--success-color); height: 1em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="game-screen">
+            <h1>ASCIIビットパターン判定クイズ</h1>
+            <p>
+                表示された8ビットのパターンが表すASCII文字の種類を当ててください。
+                <br>全25問に挑戦します。
+            </p>
+            <div class="instructions">
+                <strong>←</strong>: 大文字&nbsp;&nbsp;&nbsp;
+                <strong>↓</strong>: 数字&nbsp;&nbsp;&nbsp;
+                <strong>→</strong>: 小文字&nbsp;&nbsp;&nbsp;
+                <strong>スペース</strong>: 次の問題
+            </div>
+            <div class="settings-group">
+                <div class="selector">
+                    <label for="delaySelect">自動更新:</label>
+                    <select id="delaySelect">
+                        <option value="200" selected>0.2秒</option>
+                        <option value="1000">1秒</option>
+                        <option value="2000">2秒</option>
+                        <option value="manual">手動</option>
+                    </select>
+                </div>
+            </div>
+            <div class="quiz-area">
+                <div id="binary-display" class="binary-display"></div>
+                <div id="feedback-container" class="feedback-container"></div>
+            </div>
+            <div class="choice-container">
+                <button id="choice-upper" class="choice-button">大文字</button>
+                <button id="choice-digit" class="choice-button">数字</button>
+                <button id="choice-lower" class="choice-button">小文字</button>
+            </div>
+            <div class="button-group">
+                <button id="nextQuestionBtn">次の問題</button>
+            </div>
+        </div>
+
+        <div id="result-screen">
+            <h1>結果</h1>
+            <div class="result-metrics">
+                <div class="metric">
+                    <span id="accuracy-value" class="metric-value">0%</span>
+                    <span class="metric-label">正答率</span>
+                </div>
+                <div class="metric">
+                    <span id="time-taken-value" class="metric-value">0.0s</span>
+                    <span class="metric-label">経過時間</span>
+                </div>
+            </div>
+            <textarea id="result-text-area" rows="6" readonly></textarea>
+            <div id="copy-feedback"></div>
+            <div class="button-group">
+                <button id="copy-button">結果をコピー</button>
+                <button id="retry-button">もう一度挑戦</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const gameScreen = document.getElementById('game-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const binaryDisplay = document.getElementById('binary-display');
+        const feedbackContainer = document.getElementById('feedback-container');
+        const choiceButtons = {
+            upper: document.getElementById('choice-upper'),
+            lower: document.getElementById('choice-lower'),
+            digit: document.getElementById('choice-digit')
+        };
+        const nextQuestionBtn = document.getElementById('nextQuestionBtn');
+        const delaySelect = document.getElementById('delaySelect');
+        const accuracyValueEl = document.getElementById('accuracy-value');
+        const timeTakenValueEl = document.getElementById('time-taken-value');
+        const resultTextArea = document.getElementById('result-text-area');
+        const copyButton = document.getElementById('copy-button');
+        const retryButton = document.getElementById('retry-button');
+        const copyFeedback = document.getElementById('copy-feedback');
+
+        const TOTAL_QUESTIONS = 25;
+        const CHAR_TYPES = {
+            UPPER: { name: 'upper', start: 65, end: 90 },  // A-Z
+            LOWER: { name: 'lower', start: 97, end: 122 }, // a-z
+            DIGIT: { name: 'digit', start: 48, end: 57 }   // 0-9
+        };
+
+        let state = {};
+        let nextQuestionTimer = null;
+        let currentDelay = 200;
+        let questionCount = 0;
+        let correctAnswers = 0;
+        let startTime = null;
+
+        function initGame() {
+            questionCount = 0;
+            correctAnswers = 0;
+            startTime = null;
+            clearTimeout(nextQuestionTimer);
+            resultScreen.style.display = 'none';
+            gameScreen.style.display = 'flex';
+            generateQuestion();
+        }
+
+        function generateProblem() {
+            const typeKeys = Object.keys(CHAR_TYPES);
+            const randomTypeKey = typeKeys[Math.floor(Math.random() * typeKeys.length)];
+            const charType = CHAR_TYPES[randomTypeKey];
+            
+            const charCode = charType.start + Math.floor(Math.random() * (charType.end - charType.start + 1));
+            const binaryString = charCode.toString(2).padStart(8, '0');
+            
+            return { binaryString, correctAnswerType: charType.name, charCode };
+        }
+
+        function generateQuestion() {
+            clearTimeout(nextQuestionTimer);
+            if (questionCount === 0 && startTime !== null) { startTime = new Date(); }
+
+            questionCount++;
+            if (questionCount > TOTAL_QUESTIONS) {
+                showResult();
+                return;
+            }
+
+            state = { ...generateProblem(), answered: false };
+            
+            feedbackContainer.classList.remove('visible', 'correct', 'incorrect');
+            feedbackContainer.innerHTML = ''; // 中身をクリア
+            for (const key in choiceButtons) {
+                choiceButtons[key].disabled = false;
+                choiceButtons[key].classList.remove('correct', 'incorrect');
+            }
+            displayBinary(state.binaryString);
+        }
+
+        function displayBinary(binaryStr) {
+            binaryDisplay.innerHTML = '';
+            const nibble1 = document.createElement('div');
+            nibble1.className = 'binary-nibble';
+            const nibble2 = document.createElement('div');
+            nibble2.className = 'binary-nibble';
+
+            for (let i = 0; i < 8; i++) {
+                const digit = binaryStr[i];
+                const digitEl = document.createElement('div');
+                digitEl.className = `binary-digit digit-${digit}`;
+                digitEl.textContent = digit;
+                if (i < 4) {
+                    nibble1.appendChild(digitEl);
+                } else {
+                    nibble2.appendChild(digitEl);
+                }
+            }
+            binaryDisplay.appendChild(nibble1);
+            binaryDisplay.appendChild(nibble2);
+        }
+        
+        function checkAnswer(userChoice) {
+            if (state.answered) return;
+            if (questionCount === 1 && startTime === null) { startTime = new Date(); }
+            state.answered = true;
+
+            const selectedButton = choiceButtons[userChoice];
+            const isCorrect = userChoice === state.correctAnswerType;
+            const actualChar = String.fromCharCode(state.charCode);
+
+            const icon = isCorrect ? '✔' : '✖';
+            feedbackContainer.innerHTML = `
+                <span class="feedback-icon">${icon}</span>
+                <span class="feedback-char">${actualChar}</span>
+            `;
+
+            if (isCorrect) {
+                correctAnswers++;
+                feedbackContainer.classList.add('correct');
+                selectedButton.classList.add('correct');
+            } else {
+                feedbackContainer.classList.add('incorrect');
+                selectedButton.classList.add('incorrect');
+                choiceButtons[state.correctAnswerType].classList.add('correct');
+            }
+            
+            feedbackContainer.classList.add('visible');
+            for (const key in choiceButtons) { choiceButtons[key].disabled = true; }
+
+            if (currentDelay !== 'manual') {
+                nextQuestionTimer = setTimeout(generateQuestion, parseInt(currentDelay, 10));
+            }
+        }
+
+        function showResult() {
+            const endTime = new Date();
+            const timeTaken = (startTime === null) ? 0 : (endTime - startTime) / 1000;
+            const accuracy = (correctAnswers / TOTAL_QUESTIONS) * 100;
+            
+            accuracyValueEl.textContent = `${(isNaN(accuracy) ? 0 : accuracy).toFixed(1)}%`;
+            timeTakenValueEl.textContent = `${timeTaken.toFixed(1)}s`;
+
+            const resultString = `\`\`\`\n[ASCIIビットパターン判定クイズ]\n\n正答率: ${(isNaN(accuracy) ? 0 : accuracy).toFixed(1)}% (${correctAnswers}/${TOTAL_QUESTIONS}問)\n経過時間: ${timeTaken.toFixed(1)}秒\n\`\`\``;
+            resultTextArea.value = resultString;
+            
+            gameScreen.style.display = 'none';
+            resultScreen.style.display = 'flex';
+        }
+
+        // --- イベントリスナー ---
+        choiceButtons.upper.addEventListener('click', () => checkAnswer('upper'));
+        choiceButtons.lower.addEventListener('click', () => checkAnswer('lower'));
+        choiceButtons.digit.addEventListener('click', () => checkAnswer('digit'));
+
+        nextQuestionBtn.addEventListener('click', generateQuestion);
+        delaySelect.addEventListener('change', (event) => { currentDelay = event.target.value; });
+        retryButton.addEventListener('click', initGame);
+        copyButton.addEventListener('click', () => {
+            navigator.clipboard.writeText(resultTextArea.value).then(() => {
+                copyFeedback.textContent = 'コピーしました！';
+                setTimeout(() => { copyFeedback.textContent = ''; }, 2000);
+            }).catch(err => {
+                copyFeedback.textContent = 'コピーに失敗しました';
+            });
+        });
+
+        window.addEventListener('keydown', (event) => {
+            if (event.code === 'Space' || event.key === ' ') {
+                event.preventDefault();
+                if (gameScreen.style.display !== 'none' && state.answered) {
+                   generateQuestion();
+                }
+                return;
+            }
+            if (gameScreen.style.display !== 'none' && !state.answered) {
+                 switch (event.key) {
+                    case 'ArrowLeft':
+                        event.preventDefault();
+                        checkAnswer('upper');
+                        break;
+                    case 'ArrowRight':
+                        event.preventDefault();
+                        checkAnswer('lower');
+                        break;
+                    case 'ArrowDown':
+                        event.preventDefault();
+                        checkAnswer('digit');
+                        break;
+                 }
+            }
+        });
+
+        // --- 初期化 ---
+        initGame();
+    </script>
+</body>
+</html>
