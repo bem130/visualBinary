@@ -176,7 +176,7 @@
             <h1>二進数⇔十六進数 変換クイズ Duo</h1>
             <!-- ★★★ 変更点: 説明文を修正 ★★★ -->
             <p>
-                左右の二進数 (上から1, 2, 4, 8の位) が表す十六進数をそれぞれ選択してください。
+                左右の二進数 (下から1, 2, 4, 8の位) が表す十六進数をそれぞれ選択してください。
                 <br>全50セット(100問)に挑戦します。
             </p>
             <div class="instructions">
@@ -299,9 +299,8 @@
                 ? { left: correctAnswerHex, right: wrongAnswerHex }
                 : { left: wrongAnswerHex, right: correctAnswerHex };
             const binaryString = correctAnswerValue.toString(2).padStart(4, '0');
-            // NOTE: 文字列を反転させることで、1, 2, 4, 8 の順で表示される
-            const reversedBinaryString = binaryString.split('').reverse().join('');
-            return { correctAnswerValue, choices, binaryString: reversedBinaryString };
+            // 反転せず8421の順（上から8,4,2,1）で表示
+            return { correctAnswerValue, choices, binaryString };
         }
 
         function generateQuestion() {
