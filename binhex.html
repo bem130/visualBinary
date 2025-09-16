@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二進数⇔十六進数 変換クイズ Duo</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;700&family=JetBrains+Mono:wght@700&display=swap');
+
+        :root {
+            --bg-color: #0F172A; /* Slate 900 */
+            --container-bg: #1E293B; /* Slate 800 */
+            --border-color: #334155; /* Slate 700 */
+            --text-primary: #F1F5F9; /* Slate 100 */
+            --text-secondary: #94A3B8; /* Slate 400 */
+            --accent-start: #3B82F6; /* Blue 500 */
+            --accent-end: #8B5CF6; /* Violet 500 */
+            --accent-hover: #2563EB; /* Blue 600 */
+            --success-color: #22C55E; /* Green 500 */
+            --error-color: #EF4444; /* Red 500 */
+            --code-bg: #0F172A; /* Slate 900 */
+            color-scheme: dark;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            background-color: var(--container-bg);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 900px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        h1 {
+            font-size: 2rem; font-weight: 700; margin: 0;
+            background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        p { font-size: 1rem; color: var(--text-secondary); margin: 0; line-height: 1.6; }
+        
+        .instructions {
+            background-color: var(--bg-color); padding: 0.75rem 1rem; border-radius: 0.75rem;
+            border: 1px solid var(--border-color); color: var(--text-secondary); font-size: 0.9rem;
+        }
+
+        .settings-group {
+            display: flex; justify-content: center; align-items: center; gap: 1.5rem;
+            background-color: var(--bg-color); padding: 1rem; border-radius: 1rem;
+            border: 1px solid var(--border-color);
+        }
+        .selector { display: flex; align-items: center; justify-content: center; gap: 1rem; }
+        .selector label { font-size: 1rem; color: var(--text-secondary); }
+        .selector select {
+            background-color: var(--container-bg); color: var(--text-primary);
+            border: 2px solid var(--border-color); border-radius: 0.75rem;
+            padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer;
+        }
+        .selector select:focus { outline: none; border-color: var(--accent-start); }
+
+        .quiz-container { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .quiz-instance { display: flex; flex-direction: column; gap: 1rem; }
+        .quiz-area {
+            background-color: var(--bg-color); border: 2px solid var(--border-color);
+            border-radius: 0.75rem; padding: 1.5rem; width: 100%; box-sizing: border-box;
+            min-height: 300px; /* 縦並びのため高さを調整 */ display: flex; flex-direction: column; align-items: center;
+            justify-content: center; gap: 1.5rem; position: relative;
+        }
+        /* ★★★ 変更点: 縦並びにするためのCSSを追加 ★★★ */
+        .binary-display {
+            display: flex;
+            flex-direction: column; /* 縦並びに変更 */
+            gap: 0.5rem; /* 隙間を調整 */
+            justify-content: center;
+            align-items: center;
+        }
+        .binary-digit {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem; /* サイズを少し調整 */
+            width: 80px;  /* 幅を広く */
+            height: 40px; /* 高さを低く */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            font-weight: 700;
+            transition: transform 0.2s ease;
+        }
+        .digit-0 { background-color: var(--bg-color); color: var(--text-primary); border: 2px solid var(--border-color); }
+        .digit-1 { background-color: var(--text-primary); color: var(--bg-color); }
+        .feedback-container {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 6rem; font-weight: 700; opacity: 0;
+            transition: opacity 0.3s ease; pointer-events: none;
+        }
+        .feedback-container.visible { opacity: 1; }
+        .feedback-container.correct { color: var(--success-color); }
+        .feedback-container.incorrect { color: var(--error-color); }
+
+        .choice-container { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .choice-button {
+            font-family: 'JetBrains Mono', monospace; background-color: var(--container-bg);
+            color: var(--text-primary); padding: 1rem; border: 2px solid var(--border-color);
+            border-radius: 0.75rem; cursor: pointer; font-size: 2rem; font-weight: 700;
+            transition: all 0.2s ease;
+        }
+        .choice-button:not(:disabled):hover { border-color: var(--accent-start); transform: translateY(-3px); }
+        .choice-button:disabled { cursor: not-allowed; opacity: 0.7; }
+        .choice-button.correct { background-color: var(--success-color); border-color: var(--success-color); color: #fff; }
+        .choice-button.incorrect { background-color: var(--error-color); border-color: var(--error-color); color: #fff; }
+
+        .button-group { display: flex; align-items: center; justify-content: center; gap: 1rem; }
+        .button-group button {
+            background-image: linear-gradient(90deg, var(--accent-start) 0%, var(--accent-end) 100%);
+            color: #fff; padding: 0.75rem 2rem; border: none; border-radius: 0.75rem;
+            cursor: pointer; font-size: 1rem; font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); min-width: 180px;
+        }
+        .button-group button:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); }
+        
+        #game-screen, #result-screen {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 100%;
+            align-items: center;
+        }
+        
+        #result-screen {
+            display: none;
+        }
+
+        .result-metrics { display: flex; gap: 2rem; font-size: 1.5rem; }
+        .metric { display: flex; flex-direction: column; }
+        .metric-value { font-size: 2.5rem; font-weight: 700; }
+        .metric-label { font-size: 1rem; color: var(--text-secondary); }
+
+        #result-text-area {
+            width: 100%;
+            max-width: 500px;
+            background-color: var(--code-bg);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            resize: none;
+            text-align: center;
+        }
+        #copy-feedback { font-size: 0.9rem; color: var(--success-color); height: 1em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="game-screen">
+            <h1>二進数⇔十六進数 変換クイズ Duo</h1>
+            <!-- ★★★ 変更点: 説明文を修正 ★★★ -->
+            <p>
+                左右の二進数 (上から1, 2, 4, 8の位) が表す十六進数をそれぞれ選択してください。
+                <br>全50セット(100問)に挑戦します。
+            </p>
+            <div class="instructions">
+                <strong>← →キー</strong>で解答 (左→右の順)、<strong>スペースキー</strong>で次の問題へ進みます。
+            </div>
+            <div class="settings-group">
+                <div class="selector">
+                    <label for="delaySelect">自動更新:</label>
+                    <select id="delaySelect">
+                        <option value="200" selected>0.2秒</option>
+                        <option value="1000">1秒</option>
+                        <option value="2000">2秒</option>
+                        <option value="3000">3秒</option>
+                        <option value="5000">5秒</option>
+                        <option value="manual">手動</option>
+                    </select>
+                </div>
+            </div>
+            <div class="quiz-container">
+                <div class="quiz-instance">
+                    <div class="quiz-area">
+                        <div id="binary-display-left" class="binary-display"></div>
+                        <div id="feedback-container-left" class="feedback-container"></div>
+                    </div>
+                    <div class="choice-container">
+                        <button id="choice-left-left" class="choice-button"></button>
+                        <button id="choice-left-right" class="choice-button"></button>
+                    </div>
+                </div>
+                <div class="quiz-instance">
+                    <div class="quiz-area">
+                        <div id="binary-display-right" class="binary-display"></div>
+                        <div id="feedback-container-right" class="feedback-container"></div>
+                    </div>
+                    <div class="choice-container">
+                        <button id="choice-right-left" class="choice-button"></button>
+                        <button id="choice-right-right" class="choice-button"></button>
+                    </div>
+                </div>
+            </div>
+            <div class="button-group">
+                <button id="nextQuestionBtn">次の問題</button>
+            </div>
+        </div>
+
+        <div id="result-screen">
+            <h1>結果</h1>
+            <div class="result-metrics">
+                <div class="metric">
+                    <span id="accuracy-value" class="metric-value">0%</span>
+                    <span class="metric-label">正答率</span>
+                </div>
+                <div class="metric">
+                    <span id="time-taken-value" class="metric-value">0.0s</span>
+                    <span class="metric-label">経過時間</span>
+                </div>
+            </div>
+            <textarea id="result-text-area" rows="6" readonly></textarea>
+            <div id="copy-feedback"></div>
+            <div class="button-group">
+                <button id="copy-button">結果をコピー</button>
+                <button id="retry-button">もう一度挑戦</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const gameScreen = document.getElementById('game-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const elements = {
+            left: {
+                binaryDisplay: document.getElementById('binary-display-left'),
+                feedbackContainer: document.getElementById('feedback-container-left'),
+                choiceLeftBtn: document.getElementById('choice-left-left'),
+                choiceRightBtn: document.getElementById('choice-left-right'),
+            },
+            right: {
+                binaryDisplay: document.getElementById('binary-display-right'),
+                feedbackContainer: document.getElementById('feedback-container-right'),
+                choiceLeftBtn: document.getElementById('choice-right-left'),
+                choiceRightBtn: document.getElementById('choice-right-right'),
+            }
+        };
+        const nextQuestionBtn = document.getElementById('nextQuestionBtn');
+        const delaySelect = document.getElementById('delaySelect');
+        const accuracyValueEl = document.getElementById('accuracy-value');
+        const timeTakenValueEl = document.getElementById('time-taken-value');
+        const resultTextArea = document.getElementById('result-text-area');
+        const copyButton = document.getElementById('copy-button');
+        const retryButton = document.getElementById('retry-button');
+        const copyFeedback = document.getElementById('copy-feedback');
+
+    const TOTAL_SETS = 50;
+        let state = {};
+        let nextQuestionTimer = null;
+        let currentDelay = 200;
+        let questionCount = 0;
+        let correctAnswers = 0;
+        let startTime = null;
+
+        function initGame() {
+            questionCount = 0;
+            correctAnswers = 0;
+            startTime = null; // ★ 時刻をリセット
+            clearTimeout(nextQuestionTimer);
+
+            resultScreen.style.display = 'none';
+            gameScreen.style.display = 'flex';
+            
+            generateQuestion();
+        }
+
+        function generateProblem() {
+            const correctAnswerValue = Math.floor(Math.random() * 16);
+            let wrongAnswerValue;
+            do { wrongAnswerValue = Math.floor(Math.random() * 16); } while (wrongAnswerValue === correctAnswerValue);
+            const correctAnswerHex = correctAnswerValue.toString(16).toUpperCase();
+            const wrongAnswerHex = wrongAnswerValue.toString(16).toUpperCase();
+            let choices = (Math.random() < 0.5) 
+                ? { left: correctAnswerHex, right: wrongAnswerHex }
+                : { left: wrongAnswerHex, right: correctAnswerHex };
+            const binaryString = correctAnswerValue.toString(2).padStart(4, '0');
+            // NOTE: 文字列を反転させることで、1, 2, 4, 8 の順で表示される
+            const reversedBinaryString = binaryString.split('').reverse().join('');
+            return { correctAnswerValue, choices, binaryString: reversedBinaryString };
+        }
+
+        function generateQuestion() {
+            clearTimeout(nextQuestionTimer);
+            
+            // startTime は最初の解答時に設定されるため、ここでは不要
+            // if (questionCount === 0 && startTime === null) {
+            //     startTime = new Date();
+            // }
+
+            questionCount++;
+            if (questionCount > TOTAL_SETS) {
+                showResult();
+                return;
+            }
+
+            state = {
+                left: generateProblem(),
+                right: generateProblem(),
+                answeredLeft: false,
+                answeredRight: false,
+            };
+            
+            ['left', 'right'].forEach(side => {
+                const sideElements = elements[side];
+                const sideState = state[side];
+                sideElements.feedbackContainer.classList.remove('visible', 'correct', 'incorrect');
+                sideElements.choiceLeftBtn.disabled = false;
+                sideElements.choiceRightBtn.disabled = false;
+                sideElements.choiceLeftBtn.classList.remove('correct', 'incorrect');
+                sideElements.choiceRightBtn.classList.remove('correct', 'incorrect');
+                displayBinary(sideElements.binaryDisplay, sideState.binaryString);
+                sideElements.choiceLeftBtn.textContent = sideState.choices.left;
+                sideElements.choiceRightBtn.textContent = sideState.choices.right;
+            });
+        }
+
+        function displayBinary(displayElement, binaryStr) {
+            displayElement.innerHTML = '';
+            for (const digit of binaryStr) {
+                const digitEl = document.createElement('div');
+                digitEl.className = `binary-digit digit-${digit}`;
+                digitEl.textContent = digit;
+                displayElement.appendChild(digitEl);
+            }
+        }
+
+        function checkAnswer(problemSide, choiceSide) {
+            const isLeft = problemSide === 'left';
+            if ((isLeft && state.answeredLeft) || (!isLeft && state.answeredRight)) return;
+
+            // ★ 1問目の左側の問題に解答した瞬間に計測開始
+            if (questionCount === 1 && problemSide === 'left' && startTime === null) {
+                startTime = new Date();
+            }
+
+            if (isLeft) state.answeredLeft = true; else state.answeredRight = true;
+
+            const sideState = state[problemSide];
+            const sideElements = elements[problemSide];
+            const selectedAnswer = sideState.choices[choiceSide];
+            const correctAnswerHex = sideState.correctAnswerValue.toString(16).toUpperCase();
+            const selectedButton = (choiceSide === 'left') ? sideElements.choiceLeftBtn : sideElements.choiceRightBtn;
+            const feedbackText = sideElements.feedbackContainer;
+
+            if (selectedAnswer === correctAnswerHex) {
+                correctAnswers++;
+                feedbackText.textContent = '✔';
+                feedbackText.classList.add('correct');
+                selectedButton.classList.add('correct');
+            } else {
+                feedbackText.textContent = '✖';
+                feedbackText.classList.add('incorrect');
+                selectedButton.classList.add('incorrect');
+                if(sideState.choices.left === correctAnswerHex) sideElements.choiceLeftBtn.classList.add('correct');
+                else sideElements.choiceRightBtn.classList.add('correct');
+            }
+            
+            feedbackText.classList.add('visible');
+            sideElements.choiceLeftBtn.disabled = true;
+            sideElements.choiceRightBtn.disabled = true;
+
+            if (state.answeredLeft && state.answeredRight) {
+                if (currentDelay !== 'manual') {
+                    nextQuestionTimer = setTimeout(generateQuestion, parseInt(currentDelay, 10));
+                }
+            }
+        }
+
+        function showResult() {
+            const endTime = new Date();
+            const timeTaken = (startTime === null) ? 0 : (endTime - startTime) / 1000; // startTimeが設定されてない場合は0
+            const accuracy = (correctAnswers / (TOTAL_SETS * 2)) * 100;
+            
+            // NaN回避と適切な表示
+            accuracyValueEl.textContent = `${(isNaN(accuracy) ? 0 : accuracy).toFixed(1)}%`;
+            timeTakenValueEl.textContent = `${timeTaken.toFixed(1)}s`;
+
+            const resultString = `\`\`\`\n[二進数⇔十六進数クイズDuo]\n\n正答率: ${(isNaN(accuracy) ? 0 : accuracy).toFixed(1)}% (${correctAnswers}/100問)\n経過時間: ${timeTaken.toFixed(1)}秒\n\`\`\``;
+            resultTextArea.value = resultString;
+            
+            gameScreen.style.display = 'none';
+            resultScreen.style.display = 'flex';
+        }
+
+        // --- イベントリスナー ---
+        elements.left.choiceLeftBtn.addEventListener('click', () => checkAnswer('left', 'left'));
+        elements.left.choiceRightBtn.addEventListener('click', () => checkAnswer('left', 'right'));
+        elements.right.choiceLeftBtn.addEventListener('click', () => checkAnswer('right', 'left'));
+        elements.right.choiceRightBtn.addEventListener('click', () => checkAnswer('right', 'right'));
+
+        nextQuestionBtn.addEventListener('click', generateQuestion);
+        delaySelect.addEventListener('change', (event) => { currentDelay = event.target.value; });
+        retryButton.addEventListener('click', initGame);
+        copyButton.addEventListener('click', () => {
+            navigator.clipboard.writeText(resultTextArea.value).then(() => {
+                copyFeedback.textContent = 'コピーしました！';
+                setTimeout(() => { copyFeedback.textContent = ''; }, 2000);
+            }).catch(err => {
+                copyFeedback.textContent = 'コピーに失敗しました';
+            });
+        });
+
+        window.addEventListener('keydown', (event) => {
+            if (event.code === 'Space' || event.key === ' ') {
+                event.preventDefault();
+                if (gameScreen.style.display !== 'none') {
+                   generateQuestion();
+                }
+                return;
+            }
+            if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                event.preventDefault();
+                const choice = event.key === 'ArrowLeft' ? 'left' : 'right';
+                // ★ キーボード入力でも計測開始のロジックを適用
+                if (!state.answeredLeft) {
+                    checkAnswer('left', choice);
+                } else if (!state.answeredRight) {
+                    checkAnswer('right', choice);
+                }
+            }
+        });
+
+        // --- 初期化 ---
+        initGame();
+    </script>
+</body>
+</html>
